@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #050508;
+  --panel: #0c0d14;
+  --snow: #f4f4f5;
+  --mist: #a1a1aa;
+  --ember: #f97316;
+  --forge: #38bdf8;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-panel: var(--panel);
+  --color-snow: var(--snow);
+  --color-mist: var(--mist);
+  --color-ember: var(--ember);
+  --color-forge: var(--forge);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --shadow-glow: 0 0 40px rgba(249, 115, 22, 0.18);
+  --shadow-panel: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--ink);
+  color: var(--snow);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  min-height: 100%;
+}
+
+/* Soft grid + radial wash behind home hero */
+.forge-bg {
+  background-color: var(--ink);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(249, 115, 22, 0.18), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(56, 189, 248, 0.12), transparent),
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: auto, auto, 48px 48px, 48px 48px;
+  background-position: center, center, center, center;
+}
+
+::selection {
+  background: rgba(249, 115, 22, 0.35);
+  color: white;
+}
