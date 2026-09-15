@@ -6,7 +6,7 @@ import type { CreateRunRequest, Platform, Tone } from "@/lib/types";
 export const runtime = "nodejs";
 
 const PLATFORMS: Platform[] = ["web", "mobile", "api"];
-const TONES: Tone[] = ["professional", "playful", "bold", "minimal"];
+const TONES: Tone[] = ["professional", "playful", "bold", "minimal", "friendly"];
 
 export async function GET() {
   const runs = await listRuns(30);

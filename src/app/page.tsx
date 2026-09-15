@@ -49,7 +49,7 @@ export default async function HomePage() {
         </div>
 
         {recent.length > 0 && (
-          <div className="mt-16 w-full max-w-2xl text-left">
+          <div id="recent" className="mt-16 w-full max-w-2xl scroll-mt-20 text-left">
             <h2 className="mb-3 text-xs font-medium uppercase tracking-widest text-mist">
               Recent runs
             </h2>
@@ -58,12 +58,12 @@ export default async function HomePage() {
                 <li key={r.id}>
                   <Link
                     href={`/runs/${r.id}`}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-sm transition hover:border-white/15"
+                    className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-sm transition hover:border-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forge"
                   >
                     <span className="truncate text-snow">
                       {r.brief?.selectedName || r.input.idea}
                     </span>
-                    <span className="shrink-0 font-mono text-[10px] uppercase text-mist">
+                    <span className="shrink-0 font-mono text-[10px] uppercase tracking-wide text-snow/70">
                       {r.stage}
                     </span>
                   </Link>

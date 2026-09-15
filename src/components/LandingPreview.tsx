@@ -21,25 +21,26 @@ export function LandingPreview({ landing }: { landing: LandingPage }) {
         <button
           type="button"
           onClick={() => setFullscreen(true)}
-          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-mist transition hover:border-ember/40 hover:text-snow"
+          className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-snow/80 transition hover:border-ember/40 hover:text-snow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forge"
         >
           Fullscreen
         </button>
       </div>
 
+      {/* Single scroll surface: chrome + tall iframe, no nested page scroll */}
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-black shadow-panel">
-        <div className="flex items-center gap-1.5 border-b border-white/5 bg-white/[0.03] px-3 py-2">
+        <div className="flex items-center gap-1.5 border-b border-white/10 bg-white/[0.04] px-3 py-2">
           <span className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-amber-400/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/70" />
-          <span className="ml-3 truncate font-mono text-[11px] text-mist">
+          <span className="ml-3 truncate font-mono text-[11px] text-snow/70">
             preview · generated landing
           </span>
         </div>
         <iframe
           title="Landing page preview"
           srcDoc={landing.html}
-          className="h-[640px] w-full bg-slate-950"
+          className="block h-[min(78vh,820px)] w-full bg-slate-950"
           sandbox="allow-scripts"
         />
       </div>
@@ -51,7 +52,7 @@ export function LandingPreview({ landing }: { landing: LandingPage }) {
             <button
               type="button"
               onClick={() => setFullscreen(false)}
-              className="rounded-full bg-white/10 px-3 py-1.5 text-xs text-snow hover:bg-white/15"
+              className="rounded-full bg-white/10 px-3 py-1.5 text-xs text-snow hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forge"
             >
               Close
             </button>

@@ -17,7 +17,7 @@ export function Header() {
             href="https://github.com/Loreonsol/forge"
             target="_blank"
             rel="noreferrer"
-            className="transition hover:text-snow"
+            className="transition hover:text-snow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forge"
           >
             GitHub
           </a>

@@ -59,7 +59,7 @@ export function IdeaForm() {
           value={idea}
           onChange={(e) => setIdea(e.target.value)}
           placeholder="What should we build?"
-          className="w-full resize-none rounded-xl bg-transparent px-4 py-3.5 text-lg text-snow placeholder:text-mist/60 focus:outline-none"
+          className="w-full resize-none rounded-xl bg-transparent px-4 py-3.5 text-lg text-snow placeholder:text-mist/70 focus:outline-none focus-visible:ring-1 focus-visible:ring-forge/40"
         />
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/5 px-3 py-2.5">
           <button
@@ -72,7 +72,7 @@ export function IdeaForm() {
           <button
             type="submit"
             disabled={loading || idea.trim().length < 3}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-ember to-forge px-5 py-2 text-sm font-semibold text-ink shadow-glow transition enabled:hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-ember to-forge px-5 py-2 text-sm font-semibold text-ink shadow-glow transition enabled:hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forge"
           >
             {loading ? "Forging…" : "Forge it"}
             <span aria-hidden>↗</span>
@@ -117,6 +117,7 @@ export function IdeaForm() {
               className="w-full rounded-xl border border-white/10 bg-ink/60 px-3 py-2 text-sm text-snow focus:border-forge/50 focus:outline-none"
             >
               <option value="professional">Professional</option>
+              <option value="friendly">Friendly</option>
               <option value="playful">Playful</option>
               <option value="bold">Bold</option>
               <option value="minimal">Minimal</option>

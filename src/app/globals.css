@@ -3,8 +3,9 @@
 :root {
   --ink: #050508;
   --panel: #0c0d14;
-  --snow: #f4f4f5;
-  --mist: #a1a1aa;
+  /* Bumped for readable small text / IDs on dark ember UI */
+  --snow: #f7f7f8;
+  --mist: #c4c4cc;
   --ember: #f97316;
   --forge: #38bdf8;
 }
@@ -48,4 +49,10 @@ body {
 ::selection {
   background: rgba(249, 115, 22, 0.35);
   color: white;
+}
+
+/* Default focus ring for interactive elements missing explicit styles */
+:focus-visible {
+  outline: 2px solid var(--forge);
+  outline-offset: 2px;
 }

@@ -1,5 +1,5 @@
 export type Platform = "web" | "mobile" | "api";
-export type Tone = "professional" | "playful" | "bold" | "minimal";
+export type Tone = "professional" | "playful" | "bold" | "minimal" | "friendly";
 
 export type PipelineStage =
   | "queued"

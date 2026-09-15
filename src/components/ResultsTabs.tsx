@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ForgeRun } from "@/lib/types";
 import { BriefView } from "./BriefView";
 import { PlanView } from "./PlanView";
@@ -16,31 +16,60 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
+function latestReadyTab(run: ForgeRun): TabId {
+  if (run.scaffold) return "scaffold";
+  if (run.landing) return "landing";
+  if (run.plan) return "plan";
+  return "brief";
+}
+
+function isReady(run: ForgeRun, id: TabId): boolean {
+  return (
+    (id === "brief" && !!run.brief) ||
+    (id === "plan" && !!run.plan) ||
+    (id === "landing" && !!run.landing) ||
+    (id === "scaffold" && !!run.scaffold)
+  );
+}
+
 export function ResultsTabs({ run }: { run: ForgeRun }) {
-  const [tab, setTab] = useState<TabId>("brief");
+  const [tab, setTab] = useState<TabId>(() => latestReadyTab(run));
+  const [userPicked, setUserPicked] = useState(false);
+
+  // Follow pipeline progress until the user picks a tab
+  useEffect(() => {
+    if (userPicked) return;
+    setTab(latestReadyTab(run));
+  }, [run.brief, run.plan, run.landing, run.scaffold, userPicked, run]);
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap gap-1 rounded-xl border border-white/5 bg-white/[0.02] p-1">
+      <div
+        role="tablist"
+        aria-label="Result sections"
+        className="mb-5 flex flex-wrap gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-1"
+      >
         {TABS.map((t) => {
-          const ready =
-            (t.id === "brief" && run.brief) ||
-            (t.id === "plan" && run.plan) ||
-            (t.id === "landing" && run.landing) ||
-            (t.id === "scaffold" && run.scaffold);
+          const ready = isReady(run, t.id);
+          const selected = tab === t.id;
           return (
             <button
               key={t.id}
               type="button"
+              role="tab"
+              aria-selected={selected}
               disabled={!ready}
-              onClick={() => setTab(t.id)}
+              onClick={() => {
+                setUserPicked(true);
+                setTab(t.id);
+              }}
               className={[
-                "rounded-lg px-3.5 py-2 text-sm font-medium transition",
-                tab === t.id
-                  ? "bg-white/10 text-snow shadow-sm"
+                "rounded-lg px-3.5 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forge",
+                selected
+                  ? "bg-white/12 text-snow shadow-sm"
                   : ready
-                    ? "text-mist hover:text-snow"
-                    : "cursor-not-allowed text-mist/40",
+                    ? "text-mist hover:bg-white/5 hover:text-snow"
+                    : "cursor-not-allowed text-mist/45",
               ].join(" ")}
             >
               {t.label}
@@ -49,7 +78,13 @@ export function ResultsTabs({ run }: { run: ForgeRun }) {
         })}
       </div>
 
-      <div className="rounded-2xl border border-white/5 bg-panel/40 p-5 sm:p-6">
+      <div
+        role="tabpanel"
+        className={[
+          "rounded-2xl border border-white/10 bg-panel/50",
+          tab === "landing" ? "p-4 sm:p-5" : "p-5 sm:p-6",
+        ].join(" ")}
+      >
         {tab === "brief" && run.brief && <BriefView brief={run.brief} />}
         {tab === "plan" && run.plan && <PlanView plan={run.plan} />}
         {tab === "landing" && run.landing && (

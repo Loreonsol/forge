@@ -204,6 +204,14 @@ function toneAccent(tone: Tone): {
         ctaLabel: "Get started",
         vibe: "clean and precise",
       };
+    case "friendly":
+      return {
+        heroBg: "linear-gradient(135deg, #1a0f0a 0%, #292524 40%, #9a3412 100%)",
+        accent: "#fdba74",
+        accentSoft: "rgba(253, 186, 116, 0.18)",
+        ctaLabel: "Come say hi",
+        vibe: "warm and approachable",
+      };
     default:
       return {
         heroBg: "linear-gradient(135deg, #020617 0%, #0f172a 45%, #1e3a5f 100%)",

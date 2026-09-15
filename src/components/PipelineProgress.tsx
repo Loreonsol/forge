@@ -24,56 +24,75 @@ function indexOf(stage: PipelineStage) {
   return ORDER.indexOf(stage);
 }
 
+/** Slim progress strip — content navigation lives in ResultsTabs. */
 export function PipelineProgress({ stage }: { stage: PipelineStage }) {
   const current = indexOf(stage);
   const isError = stage === "error";
+  const complete = stage === "complete";
 
   return (
-    <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-      {STEPS.map((step, i) => {
-        const stepIdx = ORDER.indexOf(step.key);
-        const done = !isError && current > stepIdx;
-        const active = !isError && current === stepIdx;
-        return (
-          <li
-            key={step.key}
-            className={[
-              "relative overflow-hidden rounded-xl border px-3 py-3",
-              done
-                ? "border-ember/30 bg-ember/10"
-                : active
-                  ? "border-forge/40 bg-forge/10 shadow-glow"
-                  : "border-white/5 bg-white/[0.02]",
-            ].join(" ")}
-          >
-            <div className="flex items-center gap-2">
-              <span
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 sm:px-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-[11px] font-medium uppercase tracking-widest text-mist">
+          Pipeline
+        </p>
+        <p className="text-[11px] font-medium text-snow/70">
+          {isError
+            ? "Failed"
+            : complete
+              ? "Complete"
+              : stage === "queued"
+                ? "Queued"
+                : `Running · ${STEPS.find((s) => s.key === stage)?.label ?? stage}`}
+        </p>
+      </div>
+      <ol className="flex items-center gap-1.5 sm:gap-2">
+        {STEPS.map((step, i) => {
+          const stepIdx = ORDER.indexOf(step.key);
+          const done = !isError && current > stepIdx;
+          const active = !isError && current === stepIdx;
+          return (
+            <li key={step.key} className="flex min-w-0 flex-1 items-center gap-1.5">
+              <div
                 className={[
-                  "grid h-6 w-6 place-items-center rounded-full text-[11px] font-bold",
+                  "flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-1.5",
                   done
-                    ? "bg-ember text-ink"
+                    ? "bg-ember/15 text-snow"
                     : active
-                      ? "bg-forge text-ink animate-pulse"
-                      : "bg-white/10 text-mist",
+                      ? "bg-forge/15 text-snow ring-1 ring-forge/40"
+                      : "text-mist",
                 ].join(" ")}
+                title={step.label}
               >
-                {done ? "✓" : i + 1}
-              </span>
-              <span
-                className={[
-                  "text-sm font-medium",
-                  done || active ? "text-snow" : "text-mist",
-                ].join(" ")}
-              >
-                {step.label}
-              </span>
-            </div>
-            {active && (
-              <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-transparent via-forge to-transparent" />
-            )}
-          </li>
-        );
-      })}
-    </ol>
+                <span
+                  className={[
+                    "grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold",
+                    done
+                      ? "bg-ember text-ink"
+                      : active
+                        ? "bg-forge text-ink animate-pulse"
+                        : isError
+                          ? "bg-red-500/30 text-red-200"
+                          : "bg-white/10 text-mist",
+                  ].join(" ")}
+                >
+                  {done ? "✓" : i + 1}
+                </span>
+                <span className="truncate text-xs font-medium">{step.label}</span>
+              </div>
+              {i < STEPS.length - 1 && (
+                <span
+                  aria-hidden
+                  className={[
+                    "hidden h-px w-2 shrink-0 sm:block",
+                    done ? "bg-ember/50" : "bg-white/10",
+                  ].join(" ")}
+                />
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }
