@@ -35,8 +35,9 @@ No secrets or `.env` files are required.
 | **Plan** | v0 features, tech stack, milestones, out-of-scope |
 | **Landing** | Full HTML/CSS landing page with in-app iframe preview + fullscreen |
 | **Scaffold** | ZIP of a minimal Next.js app aligned to the plan |
+| **PDF summary** | Client-side multi-page PDF (brief + plan + next steps) — no paid APIs |
 
-Each run has an id and a results page with tabs: Brief · Plan · Landing · Scaffold. Actions include copy brief/plan, fullscreen landing, and download scaffold ZIP.
+Each run has an id and a results page with tabs: **Summary** · Brief · Plan · Landing · Scaffold. Actions include copy summary/brief/plan, copy shareable run link, fullscreen landing, **Download PDF**, and **Download scaffold ZIP** (both kept).
 
 ## Architecture
 
@@ -47,12 +48,13 @@ src/
     runs/[id]/page.tsx      # Results + live pipeline progress
     api/runs/                # POST create, GET list / by id
     api/runs/[id]/scaffold/  # ZIP download
-  components/                # Form, progress, tabs, previews
+  components/                # Form, progress, tabs, previews, PDF button
   lib/
     types.ts                 # Shared domain types
     store.ts                 # In-memory + data/runs.json persistence
     pipeline.ts              # Orchestrates Clarify → Plan → Landing → Scaffold
     zip.ts                   # JSZip packaging
+    pdf-summary.ts           # Client-side jsPDF summary export
     engine/
       types.ts               # IdeaEngine interface
       mock-engine.ts         # Default heuristic engine (no keys)
@@ -92,11 +94,16 @@ FORGE_LLM_API_KEY=sk-...
 3. Keep return shapes identical so the UI and ZIP download need no changes.
 4. Optionally keep `MockIdeaEngine` as a fallback when the key is missing.
 
+## PDF export
+
+On a completed (or brief-ready) run, click **Download PDF** near the results header or on the Summary tab. Forge builds `{product-name}-forge-summary.pdf` in the browser with [jsPDF](https://github.com/parallax/jsPDF) — product name, one-liner, brief, build plan, and next steps. No external paid APIs or secrets. The scaffold **ZIP** download remains available separately.
+
 ## Tech stack
 
 - Next.js App Router + TypeScript
 - Tailwind CSS v4
-- JSZip (scaffold download)
+- JSZip (scaffold ZIP download)
+- jsPDF (client-side summary PDF)
 - Local JSON persistence (no database required)
 
 ## Out of scope (by design)

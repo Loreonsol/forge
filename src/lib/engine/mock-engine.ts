@@ -58,6 +58,17 @@ function extractKeywords(idea: string): string[] {
     "using",
     "based",
     "like",
+    "our",
+    "my",
+    "we",
+    "us",
+    "who",
+    "want",
+    "need",
+    "just",
+    "from",
+    "into",
+    "about",
   ]);
   return idea
     .toLowerCase()
@@ -70,7 +81,8 @@ function extractKeywords(idea: string): string[] {
 function detectDomain(idea: string, keywords: string[]): string {
   const text = idea.toLowerCase();
   const domains: [RegExp, string][] = [
-    [/meal|food|recipe|nutrition|diet|cook/, "food"],
+    [/housemate|roommate|flatmate|chore|household|shared.?house|split.?bill/, "household"],
+    [/dinner|meal|food|recipe|nutrition|diet|cook|grocery|kitchen/, "food"],
     [/fitness|workout|gym|health|wellness/, "health"],
     [/finance|budget|money|invest|bank|pay/, "finance"],
     [/edu|learn|course|tutor|study|school/, "education"],
@@ -79,6 +91,7 @@ function detectDomain(idea: string, keywords: string[]): string {
     [/travel|trip|flight|hotel|booking/, "travel"],
     [/job|hire|recruit|career|resume/, "career"],
     [/ai|ml|llm|gpt|agent|automat/, "ai"],
+    [/focus|timer|pomodoro|productivity|deep.?work|distraction/, "productivity"],
     [/shop|e-?commerce|store|retail/, "commerce"],
   ];
   for (const [re, d] of domains) {
@@ -104,26 +117,42 @@ function inventNames(idea: string, keywords: string[]): string[] {
   const primary = keywords[0] || "nova";
   const secondary = keywords[1] || "spark";
   const base = titleCase(primary);
-  const names = new Set<string>();
+  const names: string[] = [];
+  const push = (n: string) => {
+    if (n && !names.includes(n)) names.push(n);
+  };
 
-  names.add(`${base}${titleCase(NAME_SUFFIXES[0])}`);
-  names.add(`${titleCase(secondary)}${titleCase(NAME_SUFFIXES[2])}`);
-  names.add(`${base} ${titleCase(NAME_SUFFIXES[5])}`);
-  names.add(`${titleCase(primary.slice(0, 4))}${titleCase(secondary.slice(0, 3))}`);
-  names.add(`Open${base}`);
-
-  // Domain-flavored extras
-  if (/meal|food|recipe/.test(idea.toLowerCase())) {
-    names.add("PlatePilot");
-    names.add("MealNest");
-    names.add("DinnerForge");
+  // Prefer domain-flavored brandables first (selectedName = names[0])
+  const low = idea.toLowerCase();
+  if (/housemate|roommate|flatmate|chore|household/.test(low)) {
+    push("HouseSync");
+    push("Roomly");
+    push("FairShare");
+    push("NestDuty");
   }
-  if (/ai|automat/.test(idea.toLowerCase())) {
-    names.add(`${base}AI`);
-    names.add(`Auto${base}`);
+  if (/meal|food|recipe|dinner|cook|grocery/.test(low)) {
+    push("PlatePilot");
+    push("MealNest");
+    push("DinnerForge");
+    push("TableTurn");
+  }
+  if (/focus|timer|pomodoro|productivity|deep.?work/.test(low)) {
+    push("FocusNest");
+    push("QuietBlock");
+    push("DeepHour");
+  }
+  if (/ai|automat/.test(low)) {
+    push(`${base}AI`);
+    push(`Auto${base}`);
   }
 
-  return Array.from(names).slice(0, 5);
+  push(`${base}${titleCase(NAME_SUFFIXES[0])}`);
+  push(`${titleCase(secondary)}${titleCase(NAME_SUFFIXES[2])}`);
+  push(`${base} ${titleCase(NAME_SUFFIXES[5])}`);
+  push(`${titleCase(primary.slice(0, 4))}${titleCase(secondary.slice(0, 3))}`);
+  push(`Open${base}`);
+
+  return names.slice(0, 5);
 }
 
 function audienceFromInput(input: IdeaInput, keywords: string[]): string {
@@ -133,16 +162,23 @@ function audienceFromInput(input: IdeaInput, keywords: string[]): string {
     /(?:for|helping|serving)\s+([a-z0-9\s,&'-]{3,40}?)(?:\.|$|,|who|that)/i
   );
   if (match) return titleCase(match[1].trim());
+  if (/housemate|roommate|flatmate/.test(idea))
+    return "Housemates and roommates sharing a kitchen and chores";
+  if (/dinner|weeknight|cook together/.test(idea))
+    return "Households that want easier weeknight dinners together";
   if (keywords.includes("parents")) return "Busy parents juggling work and family";
   if (keywords.includes("students")) return "Students and lifelong learners";
   if (keywords.includes("founders") || keywords.includes("startups"))
     return "Early-stage founders and indie makers";
+  if (keywords.includes("freelancers"))
+    return "Freelancers who want less admin and more focus time";
   return "People looking for a smarter way to get this done";
 }
 
 function problemStatement(idea: string, audience: string, domain: string): string {
   const templates: Record<string, string> = {
     food: `${audience} waste hours deciding what to cook, shopping reactively, and defaulting to takeout — leaving nutrition and budget as afterthoughts.`,
+    household: `${audience} lose evenings to "what's for dinner?", uneven chores, and group chats that never resolve — so resentment builds and takeout wins.`,
     health: `${audience} struggle to stay consistent with healthy habits because plans are generic, hard to stick to, and don't fit real schedules.`,
     finance: `${audience} lack a clear, low-friction view of money flowing in and out, so small leaks become big stress.`,
     education: `${audience} bounce between scattered resources and lose momentum without a structured, personalized path.`,
@@ -151,8 +187,9 @@ function problemStatement(idea: string, audience: string, domain: string): strin
     travel: `${audience} spend too long researching and coordinating trips, then still miss better options.`,
     career: `${audience} face opaque hiring loops and outdated advice when trying to take the next career step.`,
     ai: `${audience} need AI that actually ships outcomes — not another chatbot that dumps walls of text.`,
+    productivity: `${audience} lose deep-work blocks to notifications, fuzzy goals, and timers that don't respect real context.`,
     commerce: `${audience} fight friction between discovery, purchase, and fulfillment across too many tools.`,
-    general: `${audience} face fragmented workflows around "${idea.slice(0, 60)}" with no single product that closes the loop.`,
+    general: `${audience} face fragmented workflows around "${idea.slice(0, 60)}" with no single product that closes the loop from intent to done.`,
   };
   return templates[domain] || templates.general;
 }
@@ -237,6 +274,12 @@ function featuresForDomain(domain: string, idea: string): string[] {
       "One-tap swap for allergies or picky eaters",
       "Prep-time and leftover-aware scheduling",
     ],
+    household: [
+      "Shared dinner vote + rotate-who-cooks calendar",
+      "Chore board with fair rotation and gentle nudges",
+      "Pantry + grocery list everyone can edit in real time",
+      "Settle-up view for shared expenses (mock balances in v0)",
+    ],
     health: [
       "Personalized plan from availability and fitness level",
       "Daily check-ins with streak and progress views",
@@ -251,6 +294,11 @@ function featuresForDomain(domain: string, idea: string): string[] {
       "Prompted workflows tuned to the user's goal",
       "Structured outputs (cards, plans, checklists) not raw chat",
       "Human-in-the-loop edit before finalizing",
+    ],
+    productivity: [
+      "Focus sessions with gentle ambient cues (not guilt streaks)",
+      "Context notes so you resume mid-thought after interruptions",
+      "Cafe / noisy-environment presets for volume and duration",
     ],
     saas: [
       "Dashboard of the primary job-to-be-done",
@@ -885,14 +933,24 @@ export class MockIdeaEngine implements IdeaEngine {
       "Constraints-aware defaults (time, audience, platform) baked into the core loop",
       domain === "ai"
         ? "Structured AI outputs instead of open-ended chat walls"
-        : "Opinionated v0 scope so you can ship and learn fast",
+        : domain === "household"
+          ? "Built for shared living — fairness and low-drama coordination, not another to-do dump"
+          : domain === "food"
+            ? "Plans that respect pantry, prefs, and real weeknight time boxes"
+            : "Opinionated v0 scope so you can ship and learn fast",
       "Generated landing + scaffold keep marketing and product aligned",
     ];
 
     const oneLiner =
       domain === "food"
-        ? `${selectedName} plans weeknight meals for ${audience.split(" ")[0].toLowerCase()} households in minutes`
-        : `${selectedName} — ${input.idea.replace(/\.$/, "")}`.slice(0, 110);
+        ? `${selectedName} plans weeknight meals for busy households in minutes`
+        : domain === "household"
+          ? `${selectedName} helps housemates decide dinner, share chores, and stay fair`
+          : domain === "finance"
+            ? `${selectedName} makes money clear for people who hate spreadsheets`
+            : domain === "productivity"
+              ? `${selectedName} protects deep focus for people who work anywhere`
+              : `${selectedName} — ${input.idea.replace(/\.$/, "")}`.slice(0, 110);
 
     return {
       nameOptions,

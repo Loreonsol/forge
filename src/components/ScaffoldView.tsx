@@ -20,15 +20,15 @@ export function ScaffoldView({
             {scaffold.projectName}
           </h2>
           <p className="mt-1 text-sm text-mist">
-            Minimal Next.js starter matching the build plan — download and run
-            locally.
+            Minimal Next.js starter matching the build plan — download the ZIP
+            and run locally. (PDF summary is separate, up top.)
           </p>
         </div>
         <a
           href={`/api/runs/${runId}/scaffold`}
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-ember to-forge px-4 py-2 text-xs font-semibold text-ink shadow-glow transition hover:brightness-110"
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-ember to-forge px-4 py-2 text-xs font-semibold text-ink shadow-glow transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forge"
         >
-          Download ZIP
+          Download scaffold ZIP
         </a>
       </div>
 

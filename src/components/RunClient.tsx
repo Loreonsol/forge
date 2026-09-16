@@ -5,6 +5,8 @@ import Link from "next/link";
 import type { ForgeRun } from "@/lib/types";
 import { PipelineProgress } from "./PipelineProgress";
 import { ResultsTabs } from "./ResultsTabs";
+import { DownloadPdfButton } from "./DownloadPdfButton";
+import { CopyButton } from "./CopyButton";
 
 export function RunClient({
   initialRun,
@@ -16,6 +18,13 @@ export function RunClient({
   const [run, setRun] = useState<ForgeRun | null>(initialRun);
   const [loading, setLoading] = useState(!initialRun);
   const [notFound, setNotFound] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setShareUrl(`${window.location.origin}/runs/${runId}`);
+    }
+  }, [runId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,6 +64,8 @@ export function RunClient({
       if (interval) clearInterval(interval);
     };
   }, [runId]);
+
+  const zipReady = !!run?.scaffold;
 
   if (loading && !run) {
     return (
@@ -128,8 +139,24 @@ export function RunClient({
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-mist">{run.input.idea}</p>
         </div>
-        <div className="rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 font-mono text-[11px] text-snow/80">
-          {run.id.slice(0, 8)}
+        <div className="flex flex-col items-end gap-2">
+          <div className="rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 font-mono text-[11px] text-snow/80">
+            {run.id.slice(0, 8)}
+          </div>
+          <div className="flex flex-wrap justify-end gap-2">
+            {shareUrl ? (
+              <CopyButton text={shareUrl} label="Copy link" successLabel="Link copied" />
+            ) : null}
+            <DownloadPdfButton run={run} />
+            {zipReady ? (
+              <a
+                href={`/api/runs/${run.id}/scaffold`}
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-ember to-forge px-4 py-2 text-xs font-semibold text-ink shadow-glow transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forge"
+              >
+                Download ZIP
+              </a>
+            ) : null}
+          </div>
         </div>
       </div>
 

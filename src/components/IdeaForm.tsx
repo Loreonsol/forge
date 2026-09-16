@@ -6,9 +6,9 @@ import type { Platform, Tone } from "@/lib/types";
 
 const EXAMPLES = [
   "AI meal planner for busy parents",
+  "App for housemates to pick dinner and split chores fairly",
   "Budget tracker for freelancers who hate spreadsheets",
   "Habit coach that adapts when you miss a day",
-  "API for turning meeting notes into action items",
 ];
 
 export function IdeaForm() {

@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import type { ForgeRun } from "@/lib/types";
+import { SummaryView } from "./SummaryView";
 import { BriefView } from "./BriefView";
 import { PlanView } from "./PlanView";
 import { LandingPreview } from "./LandingPreview";
 import { ScaffoldView } from "./ScaffoldView";
 
 const TABS = [
+  { id: "summary", label: "Summary" },
   { id: "brief", label: "Brief" },
   { id: "plan", label: "Plan" },
   { id: "landing", label: "Landing" },
@@ -17,14 +19,14 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 function latestReadyTab(run: ForgeRun): TabId {
-  if (run.scaffold) return "scaffold";
-  if (run.landing) return "landing";
-  if (run.plan) return "plan";
+  // Prefer Summary once brief exists so the overview is the landing surface
+  if (run.brief) return "summary";
   return "brief";
 }
 
 function isReady(run: ForgeRun, id: TabId): boolean {
   return (
+    (id === "summary" && !!run.brief) ||
     (id === "brief" && !!run.brief) ||
     (id === "plan" && !!run.plan) ||
     (id === "landing" && !!run.landing) ||
@@ -85,6 +87,7 @@ export function ResultsTabs({ run }: { run: ForgeRun }) {
           tab === "landing" ? "p-4 sm:p-5" : "p-5 sm:p-6",
         ].join(" ")}
       >
+        {tab === "summary" && run.brief && <SummaryView run={run} />}
         {tab === "brief" && run.brief && <BriefView brief={run.brief} />}
         {tab === "plan" && run.plan && <PlanView plan={run.plan} />}
         {tab === "landing" && run.landing && (
@@ -92,6 +95,9 @@ export function ResultsTabs({ run }: { run: ForgeRun }) {
         )}
         {tab === "scaffold" && run.scaffold && (
           <ScaffoldView scaffold={run.scaffold} runId={run.id} />
+        )}
+        {tab === "summary" && !run.brief && (
+          <p className="text-sm text-mist">Waiting for summary…</p>
         )}
         {tab === "brief" && !run.brief && (
           <p className="text-sm text-mist">Waiting for brief…</p>
