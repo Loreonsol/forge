@@ -33,7 +33,7 @@ export default function RootLayout({
         <Header />
         <main className="flex-1">{children}</main>
         <footer className="border-t border-white/5 py-6 text-center text-xs text-mist">
-          Forge · idea → brief → plan → landing → scaffold · zero API keys by default
+          Forge · idea → brief → refine → plan → landing → scaffold · zero API keys by default
         </footer>
       </body>
     </html>

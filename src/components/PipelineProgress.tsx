@@ -4,6 +4,7 @@ import type { PipelineStage } from "@/lib/types";
 
 const STEPS: { key: PipelineStage; label: string }[] = [
   { key: "clarify", label: "Clarify" },
+  { key: "refine", label: "Refine" },
   { key: "plan", label: "Plan" },
   { key: "landing", label: "Landing" },
   { key: "scaffold", label: "Scaffold" },
@@ -12,6 +13,7 @@ const STEPS: { key: PipelineStage; label: string }[] = [
 const ORDER: PipelineStage[] = [
   "queued",
   "clarify",
+  "refine",
   "plan",
   "landing",
   "scaffold",
@@ -46,16 +48,16 @@ export function PipelineProgress({ stage }: { stage: PipelineStage }) {
                 : `Running · ${STEPS.find((s) => s.key === stage)?.label ?? stage}`}
         </p>
       </div>
-      <ol className="flex items-center gap-1.5 sm:gap-2">
+      <ol className="flex items-center gap-1 sm:gap-1.5">
         {STEPS.map((step, i) => {
           const stepIdx = ORDER.indexOf(step.key);
           const done = !isError && current > stepIdx;
           const active = !isError && current === stepIdx;
           return (
-            <li key={step.key} className="flex min-w-0 flex-1 items-center gap-1.5">
+            <li key={step.key} className="flex min-w-0 flex-1 items-center gap-1">
               <div
                 className={[
-                  "flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-1.5",
+                  "flex min-w-0 flex-1 items-center gap-1.5 rounded-lg px-1.5 py-1.5 sm:gap-2 sm:px-2",
                   done
                     ? "bg-ember/15 text-snow"
                     : active
@@ -78,13 +80,15 @@ export function PipelineProgress({ stage }: { stage: PipelineStage }) {
                 >
                   {done ? "✓" : i + 1}
                 </span>
-                <span className="truncate text-xs font-medium">{step.label}</span>
+                <span className="truncate text-[10px] font-medium sm:text-xs">
+                  {step.label}
+                </span>
               </div>
               {i < STEPS.length - 1 && (
                 <span
                   aria-hidden
                   className={[
-                    "hidden h-px w-2 shrink-0 sm:block",
+                    "hidden h-px w-1.5 shrink-0 sm:block",
                     done ? "bg-ember/50" : "bg-white/10",
                   ].join(" ")}
                 />

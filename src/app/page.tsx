@@ -1,4 +1,6 @@
 import { IdeaForm } from "@/components/IdeaForm";
+import { EngineBadge } from "@/components/EngineBadge";
+import { getEngineInfo } from "@/lib/engine";
 import { listRuns } from "@/lib/store";
 import Link from "next/link";
 
@@ -6,14 +8,18 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const recent = await listRuns(5);
+  const engine = getEngineInfo();
 
   return (
     <div className="relative overflow-hidden">
       <section className="mx-auto flex max-w-4xl flex-col items-center px-5 pb-20 pt-16 text-center sm:pt-24">
-        <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-medium text-mist">
-          <span className="h-1.5 w-1.5 rounded-full bg-ember" />
-          Company that builds companies
-        </p>
+        <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
+          <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-medium text-mist">
+            <span className="h-1.5 w-1.5 rounded-full bg-ember" />
+            Company that builds companies
+          </p>
+          <EngineBadge initialLabel={engine.label} />
+        </div>
         <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-snow sm:text-6xl sm:leading-[1.05]">
           Drop in an idea.
           <span className="block bg-gradient-to-r from-ember via-orange-300 to-forge bg-clip-text text-transparent">
@@ -21,21 +27,22 @@ export default async function HomePage() {
           </span>
         </h1>
         <p className="mt-5 max-w-xl text-base text-mist sm:text-lg">
-          Forge clarifies the brief, drafts a build plan, generates a live
-          marketing landing page, and packs a starter Next.js repo — all without
-          API keys.
+          Forge clarifies the brief, refines off-topic drift, drafts a build plan,
+          generates a live marketing landing page, and packs a starter Next.js
+          repo. Works with zero keys (mock) or OpenAI / xAI Grok when configured.
         </p>
 
         <div className="mt-10 w-full">
           <IdeaForm />
         </div>
 
-        <div className="mt-16 grid w-full max-w-3xl gap-3 text-left sm:grid-cols-4">
+        <div className="mt-16 grid w-full max-w-3xl gap-3 text-left sm:grid-cols-5">
           {[
             ["01", "Clarify", "Names, one-liner, problem, value"],
-            ["02", "Plan", "v0 features, stack, milestones"],
-            ["03", "Landing", "Rendered HTML preview in-app"],
-            ["04", "Scaffold", "Downloadable Next.js ZIP"],
+            ["02", "Refine", "Critique & fix topical drift"],
+            ["03", "Plan", "v0 features, stack, milestones"],
+            ["04", "Landing", "Rendered HTML preview in-app"],
+            ["05", "Scaffold", "Downloadable Next.js ZIP"],
           ].map(([n, t, d]) => (
             <div
               key={n}

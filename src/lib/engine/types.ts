@@ -9,11 +9,13 @@ import type {
 /**
  * IdeaEngine — pluggable interface for idea → product generation.
  *
- * Swap MockIdeaEngine for an LLM-backed implementation (OpenAI, Anthropic, etc.)
+ * Swap MockIdeaEngine for an LLM-backed implementation (OpenAI, xAI Grok, etc.)
  * without changing the pipeline or UI.
  */
 export interface IdeaEngine {
   clarify(input: IdeaInput): Promise<ProductBrief>;
+  /** Critique brief for off-topic drift; return improved brief used downstream. */
+  refine(input: IdeaInput, brief: ProductBrief): Promise<ProductBrief>;
   plan(input: IdeaInput, brief: ProductBrief): Promise<BuildPlan>;
   landing(
     input: IdeaInput,

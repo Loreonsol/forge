@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import type { CreateRunRequest, ForgeRun } from "./types";
-import { getIdeaEngine } from "./engine";
+import { getEngineInfo, getIdeaEngine } from "./engine";
 import { saveRun, updateRun } from "./store";
 
 export async function createAndRunPipeline(
@@ -11,6 +11,7 @@ export async function createAndRunPipeline(
     throw new Error("Idea must be at least 3 characters.");
   }
 
+  const engineInfo = getEngineInfo();
   const now = new Date().toISOString();
   const run: ForgeRun = {
     id: uuidv4(),
@@ -23,6 +24,7 @@ export async function createAndRunPipeline(
       tone: request.tone || "professional",
     },
     stage: "queued",
+    engine: engineInfo,
   };
 
   await saveRun(run);
@@ -45,8 +47,12 @@ async function executePipeline(id: string) {
 
   const input = current.input;
 
-  await updateRun(id, { stage: "clarify" });
-  const brief = await engine.clarify(input);
+  await updateRun(id, { stage: "clarify", engine: getEngineInfo() });
+  let brief = await engine.clarify(input);
+  await updateRun(id, { brief });
+
+  await updateRun(id, { stage: "refine" });
+  brief = await engine.refine(input, brief);
   await updateRun(id, { brief });
 
   await updateRun(id, { stage: "plan" });
@@ -72,6 +78,7 @@ export async function runPipelineSync(
   }
 
   const engine = getIdeaEngine();
+  const engineInfo = getEngineInfo();
   const now = new Date().toISOString();
   let run: ForgeRun = {
     id: uuidv4(),
@@ -84,10 +91,14 @@ export async function runPipelineSync(
       tone: request.tone || "professional",
     },
     stage: "clarify",
+    engine: engineInfo,
   };
   await saveRun(run);
 
-  const brief = await engine.clarify(run.input);
+  let brief = await engine.clarify(run.input);
+  run = (await updateRun(run.id, { brief, stage: "refine" }))!;
+
+  brief = await engine.refine(run.input, brief);
   run = (await updateRun(run.id, { brief, stage: "plan" }))!;
 
   const plan = await engine.plan(run.input, brief);

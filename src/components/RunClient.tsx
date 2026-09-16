@@ -7,6 +7,7 @@ import { PipelineProgress } from "./PipelineProgress";
 import { ResultsTabs } from "./ResultsTabs";
 import { DownloadPdfButton } from "./DownloadPdfButton";
 import { CopyButton } from "./CopyButton";
+import { EngineBadge } from "./EngineBadge";
 
 export function RunClient({
   initialRun,
@@ -140,8 +141,11 @@ export function RunClient({
           <p className="mt-1 max-w-2xl text-sm text-mist">{run.input.idea}</p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <div className="rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 font-mono text-[11px] text-snow/80">
-            {run.id.slice(0, 8)}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <EngineBadge initialLabel={run.engine?.label} />
+            <div className="rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 font-mono text-[11px] text-snow/80">
+              {run.id.slice(0, 8)}
+            </div>
           </div>
           <div className="flex flex-wrap justify-end gap-2">
             {shareUrl ? (
@@ -176,7 +180,7 @@ export function RunClient({
 
       {!run.brief && !done && !errored && (
         <div className="rounded-2xl border border-white/5 bg-panel/40 p-6 text-sm text-mist">
-          Clarifying your idea — brief lands in a moment.
+          Clarifying & refining your idea — brief lands in a moment.
         </div>
       )}
     </div>

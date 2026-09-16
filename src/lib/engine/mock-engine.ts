@@ -963,6 +963,70 @@ export class MockIdeaEngine implements IdeaEngine {
     };
   }
 
+  /**
+   * Heuristic critique → refine: fix off-topic naming/tagline drift
+   * (e.g. tip app saying "spreadsheets") using idea keywords.
+   */
+  async refine(input: IdeaInput, brief: ProductBrief): Promise<ProductBrief> {
+    await delay(250);
+    const keywords = extractKeywords(input.idea);
+    const domain = detectDomain(input.idea, keywords);
+    const ideaLower = input.idea.toLowerCase();
+
+    // Phrases that often leak from wrong-domain templates
+    const driftPhrases: [RegExp, string[]][] = [
+      [/spreadsheet/i, ["finance", "saas"]],
+      [/meal plan|pantry|grocery|recipe/i, ["food"]],
+      [/housemate|roommate|chore board/i, ["household"]],
+      [/deep.?work|pomodoro|focus nest/i, ["productivity"]],
+      [/workout|fitness|streak/i, ["health"]],
+    ];
+
+    let drifted = false;
+    const combined = `${brief.oneLiner} ${brief.valueProp} ${brief.problem} ${brief.differentiators.join(" ")}`;
+    for (const [re, allowed] of driftPhrases) {
+      if (re.test(combined) && !allowed.includes(domain) && !re.test(ideaLower)) {
+        drifted = true;
+        break;
+      }
+    }
+
+    // Name / one-liner must share at least one idea keyword (loose check)
+    const nameBlob = `${brief.selectedName} ${brief.oneLiner}`.toLowerCase();
+    const keywordHit =
+      keywords.length === 0 ||
+      keywords.some((k) => nameBlob.includes(k) || brief.selectedName.toLowerCase().includes(k.slice(0, 4)));
+    if (!keywordHit) drifted = true;
+
+    if (!drifted) {
+      // Light polish: ensure selectedName is in nameOptions
+      const nameOptions = [...brief.nameOptions];
+      if (!nameOptions.includes(brief.selectedName)) {
+        nameOptions.unshift(brief.selectedName);
+      }
+      return { ...brief, nameOptions: nameOptions.slice(0, 5) };
+    }
+
+    // Rebuild from heuristics while preserving any on-topic name options
+    const fresh = await this.clarify(input);
+    const mergedNames = Array.from(
+      new Set([
+        ...fresh.nameOptions,
+        ...brief.nameOptions.filter((n) =>
+          keywords.some((k) => n.toLowerCase().includes(k.slice(0, 4)))
+        ),
+      ])
+    ).slice(0, 5);
+
+    return {
+      ...fresh,
+      nameOptions: mergedNames.length ? mergedNames : fresh.nameOptions,
+      selectedName: mergedNames[0] || fresh.selectedName,
+      // Prefer fresh on-topic copy; keep differentiators length
+      differentiators: fresh.differentiators,
+    };
+  }
+
   async plan(input: IdeaInput, brief: ProductBrief): Promise<BuildPlan> {
     await delay(350);
     const keywords = extractKeywords(input.idea);

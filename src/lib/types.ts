@@ -4,11 +4,24 @@ export type Tone = "professional" | "playful" | "bold" | "minimal" | "friendly";
 export type PipelineStage =
   | "queued"
   | "clarify"
+  | "refine"
   | "plan"
   | "landing"
   | "scaffold"
   | "complete"
   | "error";
+
+export type EngineMode = "mock" | "llm";
+
+export interface EngineInfo {
+  mode: EngineMode;
+  /** Resolved FORGE_ENGINE setting (auto|mock|llm). */
+  setting: "auto" | "mock" | "llm";
+  /** Present when mode is llm. */
+  model?: string;
+  baseUrl?: string;
+  label: string;
+}
 
 export interface IdeaInput {
   idea: string;
@@ -74,6 +87,8 @@ export interface ForgeRun {
   plan?: BuildPlan;
   landing?: LandingPage;
   scaffold?: Scaffold;
+  /** Which engine produced this run (set at pipeline start). */
+  engine?: EngineInfo;
 }
 
 export interface CreateRunRequest {
