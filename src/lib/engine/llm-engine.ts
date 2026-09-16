@@ -162,7 +162,13 @@ Keep strong parts. Names/oneLiner/valueProp MUST clearly match the original idea
           if (parsed.critique) {
             console.info(`[Forge refine] ${parsed.critique}`);
           }
-          return ensureSelectedName(parsed.brief);
+          const brief = ensureSelectedName(parsed.brief);
+          return {
+            ...brief,
+            refineNotes: parsed.critique
+              ? [parsed.critique]
+              : brief.refineNotes,
+          };
         }
       );
       return result;

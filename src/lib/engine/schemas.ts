@@ -8,6 +8,7 @@ export const ProductBriefSchema = z.object({
   problem: z.string().min(1),
   valueProp: z.string().min(1),
   differentiators: z.array(z.string().min(1)).min(1).max(8),
+  refineNotes: z.array(z.string()).optional(),
 });
 
 export const MilestoneSchema = z.object({

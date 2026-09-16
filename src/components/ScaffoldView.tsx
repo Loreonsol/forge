@@ -1,4 +1,5 @@
 import type { Scaffold } from "@/lib/types";
+import { DeployPanel } from "./DeployPanel";
 
 export function ScaffoldView({
   scaffold,
@@ -21,7 +22,7 @@ export function ScaffoldView({
           </h2>
           <p className="mt-1 text-sm text-mist">
             Minimal Next.js starter matching the build plan — download the ZIP
-            and run locally. (PDF summary is separate, up top.)
+            and run locally, or deploy with Vercel in one click.
           </p>
         </div>
         <a
@@ -31,6 +32,8 @@ export function ScaffoldView({
           Download scaffold ZIP
         </a>
       </div>
+
+      <DeployPanel runId={runId} projectName={scaffold.projectName} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">

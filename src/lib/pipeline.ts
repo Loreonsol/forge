@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import type { CreateRunRequest, ForgeRun } from "./types";
 import { getEngineInfo, getIdeaEngine } from "./engine";
+import { deriveBrandKit } from "./brand-kit";
 import { saveRun, updateRun } from "./store";
 
 export async function createAndRunPipeline(
@@ -53,7 +54,8 @@ async function executePipeline(id: string) {
 
   await updateRun(id, { stage: "refine" });
   brief = await engine.refine(input, brief);
-  await updateRun(id, { brief });
+  const brandKit = deriveBrandKit(input, brief);
+  await updateRun(id, { brief, brandKit });
 
   await updateRun(id, { stage: "plan" });
   const plan = await engine.plan(input, brief);
@@ -99,7 +101,8 @@ export async function runPipelineSync(
   run = (await updateRun(run.id, { brief, stage: "refine" }))!;
 
   brief = await engine.refine(run.input, brief);
-  run = (await updateRun(run.id, { brief, stage: "plan" }))!;
+  const brandKit = deriveBrandKit(run.input, brief);
+  run = (await updateRun(run.id, { brief, brandKit, stage: "plan" }))!;
 
   const plan = await engine.plan(run.input, brief);
   run = (await updateRun(run.id, { plan, stage: "landing" }))!;

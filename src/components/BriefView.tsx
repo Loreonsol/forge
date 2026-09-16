@@ -83,6 +83,19 @@ export function BriefView({ brief }: { brief: ProductBrief }) {
           ))}
         </ul>
       </div>
+
+      {brief.refineNotes && brief.refineNotes.length > 0 && (
+        <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
+          <h3 className="mb-2 text-sm font-medium text-mist">Refine notes</h3>
+          <ul className="space-y-1.5">
+            {brief.refineNotes.map((n) => (
+              <li key={n} className="text-sm text-snow/85">
+                · {n}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

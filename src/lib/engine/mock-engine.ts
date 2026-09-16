@@ -6,8 +6,19 @@ import type {
   Scaffold,
   Tone,
   Platform,
+  BrandKit,
 } from "../types";
 import type { IdeaEngine } from "./types";
+import { deriveBrandKit } from "../brand-kit";
+import {
+  extractKeywords,
+  classifyDomain,
+  domainCopyTemplates,
+  hasOffDomainTropes,
+  topicalOverlapScore,
+  injectKeywordsIntoCopy,
+  type FineDomain,
+} from "./domain";
 
 /** Lightweight delay so the UI can show stage progress. */
 function delay(ms: number) {
@@ -28,76 +39,6 @@ function slugify(s: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 40);
-}
-
-/** Extract noun-ish keywords from the idea for naming & copy. */
-function extractKeywords(idea: string): string[] {
-  const stop = new Set([
-    "a",
-    "an",
-    "the",
-    "for",
-    "to",
-    "and",
-    "or",
-    "of",
-    "in",
-    "on",
-    "with",
-    "that",
-    "this",
-    "app",
-    "tool",
-    "platform",
-    "product",
-    "service",
-    "build",
-    "create",
-    "make",
-    "help",
-    "using",
-    "based",
-    "like",
-    "our",
-    "my",
-    "we",
-    "us",
-    "who",
-    "want",
-    "need",
-    "just",
-    "from",
-    "into",
-    "about",
-  ]);
-  return idea
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/)
-    .filter((w) => w.length > 2 && !stop.has(w))
-    .slice(0, 8);
-}
-
-function detectDomain(idea: string, keywords: string[]): string {
-  const text = idea.toLowerCase();
-  const domains: [RegExp, string][] = [
-    [/housemate|roommate|flatmate|chore|household|shared.?house|split.?bill/, "household"],
-    [/dinner|meal|food|recipe|nutrition|diet|cook|grocery|kitchen/, "food"],
-    [/fitness|workout|gym|health|wellness/, "health"],
-    [/finance|budget|money|invest|bank|pay/, "finance"],
-    [/edu|learn|course|tutor|study|school/, "education"],
-    [/market|crm|sales|lead|b2b|saas/, "saas"],
-    [/social|community|chat|network|friend/, "social"],
-    [/travel|trip|flight|hotel|booking/, "travel"],
-    [/job|hire|recruit|career|resume/, "career"],
-    [/ai|ml|llm|gpt|agent|automat/, "ai"],
-    [/focus|timer|pomodoro|productivity|deep.?work|distraction/, "productivity"],
-    [/shop|e-?commerce|store|retail/, "commerce"],
-  ];
-  for (const [re, d] of domains) {
-    if (re.test(text) || keywords.some((k) => re.test(k))) return d;
-  }
-  return "general";
 }
 
 const NAME_SUFFIXES = [
@@ -141,6 +82,18 @@ function inventNames(idea: string, keywords: string[]): string[] {
     push("QuietBlock");
     push("DeepHour");
   }
+  if (/travel|trip|flight|hotel|itinerary|vacation/.test(low)) {
+    push("TripNest");
+    push("Routely");
+    push("PackWise");
+    push("WanderKit");
+  }
+  if (/tip\b|tips\b|gratuity|tip.?jar|tip.?pool|tip.?split|payroll/.test(low)) {
+    push("TipFair");
+    push("PoolSplit");
+    push("ShiftTip");
+    push("GratuityLab");
+  }
   if (/ai|automat/.test(low)) {
     push(`${base}AI`);
     push(`Auto${base}`);
@@ -162,6 +115,10 @@ function audienceFromInput(input: IdeaInput, keywords: string[]): string {
     /(?:for|helping|serving)\s+([a-z0-9\s,&'-]{3,40}?)(?:\.|$|,|who|that)/i
   );
   if (match) return titleCase(match[1].trim());
+  if (/tip\b|tips\b|gratuity|tip.?jar|tip.?pool|tip.?split|payroll/.test(idea))
+    return "Servers, bartenders, and teams who pool tips";
+  if (/travel|trip|flight|hotel|itinerary|vacation/.test(idea))
+    return "Travelers planning trips with friends or solo";
   if (/housemate|roommate|flatmate/.test(idea))
     return "Housemates and roommates sharing a kitchen and chores";
   if (/dinner|weeknight|cook together/.test(idea))
@@ -184,7 +141,8 @@ function problemStatement(idea: string, audience: string, domain: string): strin
     education: `${audience} bounce between scattered resources and lose momentum without a structured, personalized path.`,
     saas: `${audience} cobble together tools that don't talk to each other, creating busywork instead of leverage.`,
     social: `${audience} want meaningful connection but get noise, feeds, and shallow engagement instead.`,
-    travel: `${audience} spend too long researching and coordinating trips, then still miss better options.`,
+    travel: `${audience} burn evenings tab-hopping flights, stays, and day plans — then still miss better routes and shared notes.`,
+    tips: `${audience} lose trust when tip pools, shifts, and payouts live in group chats and sticky notes — disputes follow every closing shift.`,
     career: `${audience} face opaque hiring loops and outdated advice when trying to take the next career step.`,
     ai: `${audience} need AI that actually ships outcomes — not another chatbot that dumps walls of text.`,
     productivity: `${audience} lose deep-work blocks to notifications, fuzzy goals, and timers that don't respect real context.`,
@@ -290,6 +248,18 @@ function featuresForDomain(domain: string, idea: string): string[] {
       "Budget envelopes with gentle overrun alerts",
       "Monthly insight summary in plain language",
     ],
+    travel: [
+      "Trip builder with days, stays, and must-see stops",
+      "Shared itinerary link for travel companions",
+      "Packing checklist generated from trip length and climate",
+      "Budget ballpark per day (optional — not a spreadsheet core)",
+    ],
+    tips: [
+      "Tip pool entry by shift with role weights",
+      "Fair-split calculator the team can audit",
+      "Payout summary export for the night",
+      "Dispute notes when something looks off",
+    ],
     ai: [
       "Prompted workflows tuned to the user's goal",
       "Structured outputs (cards, plans, checklists) not raw chat",
@@ -347,10 +317,12 @@ function escapeHtml(s: string): string {
 function buildLandingHtml(
   brief: ProductBrief,
   plan: BuildPlan,
-  input: IdeaInput
+  input: IdeaInput,
+  brandKit?: BrandKit
 ): LandingPage {
   const tone = input.tone || "professional";
   const accent = toneAccent(tone);
+  const brand = brandKit || deriveBrandKit(input, brief);
   const name = brief.selectedName;
   const features = plan.v0Features.slice(0, 4);
   const headline = brief.oneLiner;
@@ -368,17 +340,21 @@ function buildLandingHtml(
     )
     .join("");
 
+  const accentColor = brand.accent || accent.accent;
+  const primaryColor = brand.primary || "#030712";
   const css = `
     :root {
-      --bg: #030712;
+      --bg: ${primaryColor};
       --fg: #f8fafc;
       --muted: #94a3b8;
-      --accent: ${accent.accent};
-      --accent-soft: ${accent.accentSoft};
+      --primary: ${primaryColor};
+      --accent: ${accentColor};
+      --accent-soft: color-mix(in srgb, ${accentColor} 18%, transparent);
       --card: rgba(15, 23, 42, 0.72);
       --border: rgba(148, 163, 184, 0.16);
       --radius: 16px;
       --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      --brand-voice: ${brand.voiceAdjectives.join(", ")};
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -494,7 +470,7 @@ function buildLandingHtml(
 <body>
   <nav class="nav">
     <div class="logo">
-      <span class="logo-mark">${escapeHtml(name.charAt(0))}</span>
+      <span class="logo-mark">${escapeHtml(brand.logoMarkLetter || name.charAt(0))}</span>
       ${escapeHtml(name)}
     </div>
     <a class="nav-cta" href="#cta">${escapeHtml(cta)}</a>
@@ -530,7 +506,7 @@ function buildLandingHtml(
 
   <section class="section">
     <h2>What you get in v0</h2>
-    <p class="sub">A focused product surface — ${escapeHtml(accent.vibe)} — that proves the value prop immediately.</p>
+    <p class="sub">A focused product surface — ${escapeHtml(brand.voiceAdjectives.join(", ") || accent.vibe)} — that proves the value prop immediately.</p>
     <div class="grid">${featureCards}</div>
   </section>
 
@@ -554,11 +530,13 @@ function buildLandingHtml(
 function buildScaffold(
   brief: ProductBrief,
   plan: BuildPlan,
-  input: IdeaInput
+  input: IdeaInput,
+  brandKit?: BrandKit
 ): Scaffold {
   const name = brief.selectedName;
   const slug = slugify(name) || "forge-app";
   const platform = input.platform || "web";
+  const brand = brandKit || deriveBrandKit(input, brief);
   const featuresList = plan.v0Features.map((f) => `- ${f}`).join("\n");
 
   const packageJson = JSON.stringify(
@@ -605,6 +583,23 @@ ${brief.oneLiner}
 ${brief.valueProp}
 
 **Target user:** ${brief.targetUser}
+
+## Brand kit
+
+- **Name:** ${name}
+- **Primary:** \`${brand.primary}\`
+- **Accent:** \`${brand.accent}\`
+- **Voice:** ${brand.voiceAdjectives.join(", ")}
+- **Logo mark:** ${brand.logoMarkLetter}
+
+## Deploy
+
+\`\`\`bash
+npm install
+npx vercel
+\`\`\`
+
+Or download this scaffold and import the folder at https://vercel.com/new
 
 ## v0 features
 
@@ -677,10 +672,14 @@ export default function RootLayout({
 
 :root {
   color-scheme: dark;
+  --brand-primary: ${brand.primary};
+  --brand-accent: ${brand.accent};
+  --brand-mark: "${brand.logoMarkLetter}";
 }
 
 body {
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  background: var(--brand-primary);
 }
 `;
 
@@ -689,7 +688,7 @@ body {
     .map((f, i) => {
       const safe = f.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$/g, "\\$");
       return `        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
-          <p className="text-xs font-semibold text-sky-400">0${i + 1}</p>
+          <p className="text-xs font-semibold" style={{ color: "${brand.accent}" }}>0${i + 1}</p>
           <h2 className="mt-2 font-medium text-white">${safe}</h2>
         </div>`;
     })
@@ -700,7 +699,7 @@ body {
 export default function HomePage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 py-16">
-      <p className="mb-3 text-sm font-medium uppercase tracking-widest text-sky-400">
+      <p className="mb-3 text-sm font-medium uppercase tracking-widest" style={{ color: "${brand.accent}" }}>
         ${name.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$/g, "\\$")}
       </p>
       <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
@@ -712,7 +711,8 @@ export default function HomePage() {
       <div className="mt-8 flex flex-wrap gap-3">
         <Link
           href="/dashboard"
-          className="rounded-full bg-sky-400 px-5 py-2.5 text-sm font-semibold text-slate-950 hover:bg-sky-300"
+          className="rounded-full px-5 py-2.5 text-sm font-semibold text-slate-950 hover:opacity-90"
+          style={{ backgroundColor: "${brand.accent}" }}
         >
           Open app
         </Link>
@@ -743,7 +743,7 @@ export default function DashboardPage() {
             ${name.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$/g, "\\$")}
           </h1>
         </div>
-        <button className="rounded-full bg-sky-400 px-4 py-2 text-sm font-semibold text-slate-950">
+        <button className="rounded-full px-4 py-2 text-sm font-semibold text-slate-950" style={{ backgroundColor: "${brand.accent}" }}>
           New
         </button>
       </header>
@@ -917,40 +917,23 @@ export default nextConfig;
  * Produces coherent brief → plan → landing → scaffold from the idea text.
  */
 export class MockIdeaEngine implements IdeaEngine {
-  async clarify(input: IdeaInput): Promise<ProductBrief> {
+async clarify(input: IdeaInput): Promise<ProductBrief> {
     await delay(400);
     const keywords = extractKeywords(input.idea);
-    const domain = detectDomain(input.idea, keywords);
+    const domain = classifyDomain(input.idea, keywords);
     const nameOptions = inventNames(input.idea, keywords);
     const selectedName = nameOptions[0];
     const audience = audienceFromInput(input, keywords);
     const platform = input.platform || "web";
-    const problem = problemStatement(input.idea, audience, domain);
-    const value = valueProp(selectedName, input.idea, audience, platform);
-
-    const differentiators = [
-      "Outcome-first UX: users get a concrete result on first session",
-      "Constraints-aware defaults (time, audience, platform) baked into the core loop",
-      domain === "ai"
-        ? "Structured AI outputs instead of open-ended chat walls"
-        : domain === "household"
-          ? "Built for shared living — fairness and low-drama coordination, not another to-do dump"
-          : domain === "food"
-            ? "Plans that respect pantry, prefs, and real weeknight time boxes"
-            : "Opinionated v0 scope so you can ship and learn fast",
-      "Generated landing + scaffold keep marketing and product aligned",
-    ];
-
-    const oneLiner =
-      domain === "food"
-        ? `${selectedName} plans weeknight meals for busy households in minutes`
-        : domain === "household"
-          ? `${selectedName} helps housemates decide dinner, share chores, and stay fair`
-          : domain === "finance"
-            ? `${selectedName} makes money clear for people who hate spreadsheets`
-            : domain === "productivity"
-              ? `${selectedName} protects deep focus for people who work anywhere`
-              : `${selectedName} — ${input.idea.replace(/\.$/, "")}`.slice(0, 110);
+    const templates = domainCopyTemplates(domain, selectedName, input.idea, audience);
+    let oneLiner = templates.oneLiner;
+    let problem = templates.problem;
+    let value = templates.valueProp;
+    // Guarantee keyword presence in core copy
+    const injected = injectKeywordsIntoCopy(keywords, oneLiner, value, problem);
+    oneLiner = injected.oneLiner;
+    value = injected.valueProp;
+    problem = injected.problem;
 
     return {
       nameOptions,
@@ -959,78 +942,177 @@ export class MockIdeaEngine implements IdeaEngine {
       targetUser: audience,
       problem,
       valueProp: value,
-      differentiators,
+      differentiators: templates.differentiators,
     };
   }
 
-  /**
-   * Heuristic critique → refine: fix off-topic naming/tagline drift
-   * (e.g. tip app saying "spreadsheets") using idea keywords.
+/**
+   * Heuristic critique → refine: fix off-topic naming/tagline drift.
+   * Keywords from the original idea MUST appear in oneLiner/valueProp/problem.
+   * Off-domain tropes (spreadsheet, freelancers, invoice, budget-tracker-as-core)
+   * are rejected unless the idea is about them. On topical overlap failure,
+   * regenerates the brief from idea keywords once.
    */
   async refine(input: IdeaInput, brief: ProductBrief): Promise<ProductBrief> {
     await delay(250);
+    const notes: string[] = [];
     const keywords = extractKeywords(input.idea);
-    const domain = detectDomain(input.idea, keywords);
-    const ideaLower = input.idea.toLowerCase();
+    const domain = classifyDomain(input.idea, keywords);
+    let next: ProductBrief = { ...brief, refineNotes: undefined };
 
-    // Phrases that often leak from wrong-domain templates
-    const driftPhrases: [RegExp, string[]][] = [
-      [/spreadsheet/i, ["finance", "saas"]],
-      [/meal plan|pantry|grocery|recipe/i, ["food"]],
-      [/housemate|roommate|chore board/i, ["household"]],
-      [/deep.?work|pomodoro|focus nest/i, ["productivity"]],
-      [/workout|fitness|streak/i, ["health"]],
-    ];
-
-    let drifted = false;
-    const combined = `${brief.oneLiner} ${brief.valueProp} ${brief.problem} ${brief.differentiators.join(" ")}`;
-    for (const [re, allowed] of driftPhrases) {
-      if (re.test(combined) && !allowed.includes(domain) && !re.test(ideaLower)) {
-        drifted = true;
-        break;
-      }
+    const combined = `${next.oneLiner} ${next.valueProp} ${next.problem} ${next.differentiators.join(" ")}`;
+    const tropes = hasOffDomainTropes(combined, input.idea, domain);
+    if (tropes.length) {
+      notes.push(`Removed off-domain tropes: ${tropes.join(", ")}`);
     }
 
-    // Name / one-liner must share at least one idea keyword (loose check)
-    const nameBlob = `${brief.selectedName} ${brief.oneLiner}`.toLowerCase();
+    const overlap = topicalOverlapScore(
+      keywords,
+      next.oneLiner,
+      next.valueProp,
+      next.problem
+    );
+    if (!overlap.ok) {
+      notes.push(
+        `Weak topical overlap (hits: ${overlap.hits.join(", ") || "none"}); regenerating from idea keywords`
+      );
+    }
+
+    const nameBlob = `${next.selectedName} ${next.oneLiner}`.toLowerCase();
     const keywordHit =
       keywords.length === 0 ||
-      keywords.some((k) => nameBlob.includes(k) || brief.selectedName.toLowerCase().includes(k.slice(0, 4)));
-    if (!keywordHit) drifted = true;
-
-    if (!drifted) {
-      // Light polish: ensure selectedName is in nameOptions
-      const nameOptions = [...brief.nameOptions];
-      if (!nameOptions.includes(brief.selectedName)) {
-        nameOptions.unshift(brief.selectedName);
-      }
-      return { ...brief, nameOptions: nameOptions.slice(0, 5) };
+      keywords.some(
+        (k) =>
+          nameBlob.includes(k) ||
+          next.selectedName.toLowerCase().includes(k.slice(0, 4))
+      );
+    if (!keywordHit) {
+      notes.push("Name/one-liner missed idea keywords");
     }
 
-    // Rebuild from heuristics while preserving any on-topic name options
-    const fresh = await this.clarify(input);
-    const mergedNames = Array.from(
-      new Set([
-        ...fresh.nameOptions,
-        ...brief.nameOptions.filter((n) =>
-          keywords.some((k) => n.toLowerCase().includes(k.slice(0, 4)))
-        ),
-      ])
-    ).slice(0, 5);
+    const needsRebuild = tropes.length > 0 || !overlap.ok || !keywordHit;
 
-    return {
-      ...fresh,
-      nameOptions: mergedNames.length ? mergedNames : fresh.nameOptions,
-      selectedName: mergedNames[0] || fresh.selectedName,
-      // Prefer fresh on-topic copy; keep differentiators length
-      differentiators: fresh.differentiators,
-    };
+    if (needsRebuild) {
+      const freshNames = inventNames(input.idea, keywords);
+      const mergedNames = Array.from(
+        new Set([
+          ...freshNames,
+          ...next.nameOptions.filter((n) =>
+            keywords.some((k) => n.toLowerCase().includes(k.slice(0, 4)))
+          ),
+        ])
+      ).slice(0, 5);
+      const selectedName = mergedNames[0] || freshNames[0] || next.selectedName;
+      const rebuiltTemplates = domainCopyTemplates(
+        domain,
+        selectedName,
+        input.idea,
+        next.targetUser || audienceFromInput(input, keywords)
+      );
+      let oneLiner = rebuiltTemplates.oneLiner;
+      let valueProp = rebuiltTemplates.valueProp;
+      let problem = rebuiltTemplates.problem;
+      const inj = injectKeywordsIntoCopy(keywords, oneLiner, valueProp, problem);
+      oneLiner = inj.oneLiner;
+      valueProp = inj.valueProp;
+      problem = inj.problem;
+      if (inj.injected.length) {
+        notes.push(`Injected keywords into copy: ${inj.injected.join(", ")}`);
+      }
+      notes.push(`Rebuilt brief for domain=${domain}`);
+      next = {
+        nameOptions: mergedNames.length ? mergedNames : freshNames,
+        selectedName,
+        oneLiner,
+        targetUser: next.targetUser || audienceFromInput(input, keywords),
+        problem,
+        valueProp,
+        differentiators: rebuiltTemplates.differentiators,
+      };
+    } else {
+      // Light polish: force keyword presence even when no full rebuild
+      const inj = injectKeywordsIntoCopy(
+        keywords,
+        next.oneLiner,
+        next.valueProp,
+        next.problem
+      );
+      if (inj.injected.length) {
+        notes.push(`Polished keyword coverage: ${inj.injected.join(", ")}`);
+        next = {
+          ...next,
+          oneLiner: inj.oneLiner,
+          valueProp: inj.valueProp,
+          problem: inj.problem,
+        };
+      }
+      const nameOptions = [...next.nameOptions];
+      if (!nameOptions.includes(next.selectedName)) {
+        nameOptions.unshift(next.selectedName);
+      }
+      next = { ...next, nameOptions: nameOptions.slice(0, 5) };
+    }
+
+    // Final assert — if still failing, regenerate once from clarify templates
+    const finalOverlap = topicalOverlapScore(
+      keywords,
+      next.oneLiner,
+      next.valueProp,
+      next.problem
+    );
+    const finalTropes = hasOffDomainTropes(
+      `${next.oneLiner} ${next.valueProp} ${next.problem}`,
+      input.idea,
+      domain
+    );
+    if (!finalOverlap.ok || finalTropes.length) {
+      notes.push("Final overlap assert failed — regenerating brief once from idea keywords");
+      const audience = audienceFromInput(input, keywords);
+      const names = inventNames(input.idea, keywords);
+      const selectedName = names[0];
+      const templates = domainCopyTemplates(domain, selectedName, input.idea, audience);
+      const inj = injectKeywordsIntoCopy(
+        keywords,
+        templates.oneLiner,
+        templates.valueProp,
+        templates.problem
+      );
+      next = {
+        nameOptions: names,
+        selectedName,
+        oneLiner: inj.oneLiner,
+        targetUser: audience,
+        problem: inj.problem,
+        valueProp: inj.valueProp,
+        differentiators: templates.differentiators,
+      };
+    }
+
+    if (!notes.length) {
+      notes.push(`On-topic for domain=${domain}; no drift fixes needed`);
+    }
+
+    // Never leave finance-spreadsheet tropes on travel/tips
+    if (
+      (domain === "travel" || domain === "tips" || domain === "food" || domain === "household" || domain === "productivity") &&
+      /spreadsheet/i.test(`${next.oneLiner} ${next.valueProp} ${next.problem}`)
+    ) {
+      notes.push("Stripped residual spreadsheet wording");
+      next = {
+        ...next,
+        oneLiner: next.oneLiner.replace(/spreadsheet[s]?/gi, "busywork"),
+        valueProp: next.valueProp.replace(/spreadsheet[s]?/gi, "busywork"),
+        problem: next.problem.replace(/spreadsheet[s]?/gi, "busywork"),
+      };
+    }
+
+    return { ...next, refineNotes: notes };
   }
 
   async plan(input: IdeaInput, brief: ProductBrief): Promise<BuildPlan> {
     await delay(350);
     const keywords = extractKeywords(input.idea);
-    const domain = detectDomain(input.idea, keywords);
+    const domain = classifyDomain(input.idea, keywords);
     const platform = input.platform || "web";
 
     return {
@@ -1073,7 +1155,8 @@ export class MockIdeaEngine implements IdeaEngine {
     plan: BuildPlan
   ): Promise<LandingPage> {
     await delay(300);
-    return buildLandingHtml(brief, plan, input);
+    const brandKit = deriveBrandKit(input, brief);
+    return buildLandingHtml(brief, plan, input, brandKit);
   }
 
   async scaffold(
@@ -1082,6 +1165,7 @@ export class MockIdeaEngine implements IdeaEngine {
     plan: BuildPlan
   ): Promise<Scaffold> {
     await delay(300);
-    return buildScaffold(brief, plan, input);
+    const brandKit = deriveBrandKit(input, brief);
+    return buildScaffold(brief, plan, input, brandKit);
   }
 }

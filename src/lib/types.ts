@@ -13,6 +13,15 @@ export type PipelineStage =
 
 export type EngineMode = "mock" | "llm";
 
+/** Coarse domains used by mock anti-drift templates. */
+export type ProductDomain =
+  | "travel"
+  | "tips"
+  | "food"
+  | "household"
+  | "productivity"
+  | "generic";
+
 export interface EngineInfo {
   mode: EngineMode;
   /** Resolved FORGE_ENGINE setting (auto|mock|llm). */
@@ -38,6 +47,8 @@ export interface ProductBrief {
   problem: string;
   valueProp: string;
   differentiators: string[];
+  /** What refine changed (mock or LLM critique). */
+  refineNotes?: string[];
 }
 
 export interface Milestone {
@@ -76,6 +87,15 @@ export interface Scaffold {
   readme: string;
 }
 
+/** Brand continuity threaded into landing + scaffold. */
+export interface BrandKit {
+  name: string;
+  primary: string;
+  accent: string;
+  voiceAdjectives: string[];
+  logoMarkLetter: string;
+}
+
 export interface ForgeRun {
   id: string;
   createdAt: string;
@@ -87,6 +107,8 @@ export interface ForgeRun {
   plan?: BuildPlan;
   landing?: LandingPage;
   scaffold?: Scaffold;
+  /** Derived once after refine. */
+  brandKit?: BrandKit;
   /** Which engine produced this run (set at pipeline start). */
   engine?: EngineInfo;
 }

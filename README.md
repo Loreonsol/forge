@@ -36,10 +36,12 @@ No secrets or `.env` files are required for mock mode.
 | **Refine** | Critique pass that fixes off-topic naming/tagline drift; refined brief is used downstream |
 | **Plan** | v0 features, tech stack, milestones, out-of-scope |
 | **Landing** | Full HTML/CSS landing page with in-app iframe preview + fullscreen |
-| **Scaffold** | ZIP of a minimal Next.js app aligned to the plan |
+| **Scaffold** | ZIP of a minimal Next.js app aligned to the plan (+ brand CSS vars) |
+| **Brand kit** | Name, primary/accent colours, voice adjectives, logo mark — on Summary + threaded into landing/scaffold |
+| **Deploy** | One-click Vercel when `VERCEL_TOKEN` is set; otherwise ZIP + `npx vercel` / vercel.com/new guide |
 | **PDF summary** | Client-side multi-page PDF (brief + plan + next steps) — no paid APIs |
 
-Each run has an id and a results page with tabs: **Summary** · Brief · Plan · Landing · Scaffold. The home and results pages show an **Engine: Mock** or **Engine: LLM (model)** badge.
+Each run has an id and a results page with tabs: **Summary** · Brief · Plan · Landing · Scaffold. The home and results pages show an **Engine: Mock** or **Engine: LLM (model)** badge. Mock refine is domain-aware (travel, tips/payroll, food/household, productivity, generic) to stop copy drifting into spreadsheet/finance tropes.
 
 ## IdeaEngine modes
 
@@ -98,16 +100,19 @@ src/
     runs/[id]/page.tsx      # Results + live pipeline progress
     api/runs/                # POST create, GET list / by id
     api/runs/[id]/scaffold/  # ZIP download
+    api/runs/[id]/deploy/    # Vercel API deploy or manual instructions
     api/engine/              # GET engine badge info (no secrets)
-  components/                # Form, progress, tabs, previews, PDF, EngineBadge
+  components/                # Form, progress, tabs, previews, PDF, Deploy, EngineBadge
   lib/
-    types.ts                 # Shared domain types (incl. refine stage)
+    types.ts                 # Shared domain types (incl. BrandKit, refine)
+    brand-kit.ts             # deriveBrandKit() after refine
     store.ts                 # In-memory + data/runs.json persistence
-    pipeline.ts              # Clarify → Refine → Plan → Landing → Scaffold
+    pipeline.ts              # Clarify → Refine → Brand → Plan → Landing → Scaffold
     zip.ts                   # JSZip packaging
     pdf-summary.ts           # Client-side jsPDF summary export
     engine/
       types.ts               # IdeaEngine interface (+ refine)
+      domain.ts              # Domain classifier + anti-drift helpers
       mock-engine.ts         # Default heuristic engine (no keys)
       llm-engine.ts          # OpenAI-compatible LLM engine + mock fallback
       llm-client.ts          # Chat Completions client (timeout + 1 retry)
@@ -146,8 +151,20 @@ See [`.env.example`](./.env.example):
 | `FORGE_LLM_API_KEY` | — | Required for LLM |
 | `FORGE_LLM_BASE_URL` | `https://api.openai.com/v1` | xAI: `https://api.x.ai/v1` |
 | `FORGE_LLM_MODEL` | `gpt-4o-mini` | e.g. `grok-2-latest` on xAI |
+| `VERCEL_TOKEN` | — | Optional. Enables API deploy from Summary/Scaffold |
+| `VERCEL_ORG_ID` | — | Optional Vercel team id |
+| `VERCEL_PROJECT_ID` | — | Optional existing Vercel project id |
 
 Never commit `.env` / `.env.local` — only `.env.example` is tracked.
+
+## Deploy (generated products)
+
+On **Summary** or **Scaffold**, use **Deploy with Vercel**:
+
+1. **With `VERCEL_TOKEN`** on the Forge host — `POST /api/runs/:id/deploy` uploads scaffold files to the [Vercel Deployments API](https://vercel.com/docs/rest-api/endpoints/deployments) and returns the deployment URL when available.
+2. **Without a token** — same button returns a manual guide: download ZIP → `npm install` → `npx vercel`, or import at [vercel.com/new](https://vercel.com/new). **Open deploy guide** and **Copy npx vercel** always work.
+
+No Cloud Agents required. StackBlitz/github.dev import is skipped for generated ZIPs (no public git URL).
 
 ## PDF export
 
@@ -164,7 +181,7 @@ On a completed (or brief-ready) run, click **Download PDF** near the results hea
 
 ## Out of scope (by design)
 
-Auth, payments, multi-tenant SaaS, and auto-deploy of generated products.
+Auth, payments, and multi-tenant SaaS. Deploy is optional via VERCEL_TOKEN or manual `npx vercel` — not Cloud Agents.
 
 ## License
 
